@@ -1,5 +1,7 @@
 This data and code is for the work: 'Smaller than the unit cell: Smallest Repeating Units of Zeolite Frameworks'
 
+For generating SRUs, use the generator and the main script while placing the code and CIF files in the same directory.
+
 Data for hypothetical zeolite SRUs can be accessed at the google drive link:
 https://drive.google.com/file/d/1mto28pW1CkIriD4uDRK6ng7ylX2TQ19a/view?usp=sharing
 
