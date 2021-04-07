@@ -1,0 +1,8 @@
+This data and code is for the work: 'Smaller than the unit cell: Smallest Repeating Units of Zeolite Frameworks'
+
+Data for hypothetical zeolite SRUs can be accessed at the google drive link:
+https://drive.google.com/file/d/1mto28pW1CkIriD4uDRK6ng7ylX2TQ19a/view?usp=sharing
+
+Connectivity Matrix data exists in 2 formats, hamsolyes.txt and the CMatrix.dat
+Scripts to read from the CMatrix.dat and study the Hamiltonian nature for any CMatrix have been given. 
+These scripts are for individual study of zeolites and thus only can be done on single files. Results have been presented by iterating over all files.
