@@ -8,7 +8,9 @@ def xyz_to_csv(file_name):
 
 	file_xyz = open(xyz_name, 'r') 
 	Lines = file_xyz.readlines() 
+	file_xyz.close()
 	Lines = list(dict.fromkeys(Lines))  #Required to remove duplicates from xyz to csv
+	
 	csv_file = open(csv_name, 'w') 
 	csv_file.writelines(('x,y,z' + '\n')) 
 
@@ -19,7 +21,6 @@ def xyz_to_csv(file_name):
 			a = a.strip("'[]")
 			a = a.replace("'","")
 			csv_file.writelines(a + '\n')
-	file_xyz.close()
 	csv_file.close() 
 
 
@@ -27,9 +28,7 @@ def expand_to_lattice_size(file_name, ax, bx, cx, by, cy, cz):
 	# takes just the name of the zeolite as input and converts xyz file format to csv with only tetrahedral nodes included
 	csv_name = file_name + '.csv'
 	df = pd.read_csv(csv_name)
-	# x = ax + bx +cx
-	# xyz_name = file_name + '.xyz'
-	# print(df)
+
 	df_100 = pd.DataFrame(list(zip(df.x+ax, df.y, df.z)), columns=['x','y','z'])
 	df_200 = pd.DataFrame(list(zip(df.x+2*ax, df.y, df.z)), columns=['x','y','z'])
 	x_axis = [df, df_100, df_200]
@@ -45,11 +44,25 @@ def expand_to_lattice_size(file_name, ax, bx, cx, by, cy, cz):
 	df_xy2 = pd.DataFrame(list(zip(df_xy_axis.x+2*cx, df_xy_axis.y+2*cy, df_xy_axis.z+2*cz)), columns=['x','y','z'])
 	xyz_axis = [df_xy_axis, df_xy1, df_xy2]
 	df_xyz_axis = pd.concat(xyz_axis, ignore_index=True)
-	# print(len(df_xyz_axis))
+
 	df_condensed = df_xyz_axis.drop_duplicates()
-	# print(len(df_condensed))
-	# print(df_condensed)
-	df_condensed.to_csv(csv_name,index=False, float_format='%g')
+	
+	single_unit_cell_nodes = df_condensed['x'].between(round(ax+bx*abs(df_condensed['y']/by)+cx*abs(df_condensed['z']/cz),4), -0.0001+round(2*ax+bx*abs(df_condensed['y']/by)+cx*abs(df_condensed['z']/cz),4), inclusive='both') & df_condensed['y'].between(round(by+cy*abs(df_condensed['z']/cz),4), -0.0001+round(2*by+cy*abs(df_condensed['z']/cz),4), inclusive='both') & 	df_condensed['z'].between(round(cz,4), -0.0001+round(2*cz,4), inclusive='both')
+	df_condensed['is_in_unit_cell'] = 0
+	df_condensed.loc[single_unit_cell_nodes, 'is_in_unit_cell'] = 1
+	#####################################################
+	# Trying out new code to include only neighbourhood of central unit cell to recude computations
+	neighbourhood_of_central_cell = df_condensed['x'].between(round(ax+bx*abs(df_condensed['y']/by)+cx*abs(df_condensed['z']/cz),4)-4, 4-0.0001+round(2*ax+bx*abs(df_condensed['y']/by)+cx*abs(df_condensed['z']/cz),4), inclusive='both') \
+    & df_condensed['y'].between(round(by+cy*abs(df_condensed['z']/cz),4)-4, 4-0.0001+round(2*by+cy*abs(df_condensed['z']/cz),4), inclusive='both') \
+        & 	df_condensed['z'].between(round(cz,4)-4, 4-0.0001+round(2*cz,4), inclusive='both')
+
+	df_neighbourhood_of_central_cell = df_condensed.loc[neighbourhood_of_central_cell]
+	
+	df_neighbourhood_of_central_cell.to_csv(csv_name, index=False, float_format='%g')
+
+	######################################################
+	# Old code to save the df_condensed as csv
+	# df_condensed.to_csv(csv_name,index=False, float_format='%g')
 
 
 # import os

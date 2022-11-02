@@ -1,10 +1,20 @@
-import itertools
+# import itertools
 import dill
 import numpy as np
 import pandas as pd
-import math
+# import math
+from math import sqrt
+
+# dist_dict = {}
 
 def distance(P1, P2):
+    # if x:=dist_dict.get(((P1.x, P1.y, P1.z),(P2.x, P2.y, P2.z)), False):
+    #     return x
+    # else:
+    #     x=(((P1.x-P2.x)**2+(P1.y-P2.y)**2+(P1.z-P2.z)**2)**0.5)
+    #     dist_dict[((P2.x, P2.y, P2.z),(P1.x, P1.y, P1.z))]=x
+    #     return x
+    # return np.linalg.norm([P1.x-P2.x, P1.y-P2.y, P1.z-P2.z])
     return (((P1.x-P2.x)**2+(P1.y-P2.y)**2+(P1.z-P2.z)**2)**0.5)
 
 def vector(P1,P2,d):
@@ -12,11 +22,12 @@ def vector(P1,P2,d):
     # return np.round((math.floor((P2.x-P1.x)*10000/d)/10000, math.floor((P2.y-P1.y)*10000/d)/10000, math.floor((P2.z-P1.z)*10000/d)/10000),3)+0.0
 
 def assign_vectors(i,j,no_of_close_pts):
-    d = distance(df.loc[i],df.loc[j])
+    d = distance(df.loc[i][['x','y','z']],df.loc[j][['x','y','z']])
     if (d < dist_max and d > dist_min):
-        no_of_close_pts = no_of_close_pts + 1
-        v = vector(df.loc[i],df.loc[j],d)
-        arr = np.array([v[0], v[1], v[2]])
+        no_of_close_pts = no_of_close_pts+1
+        v = vector(df.loc[i][['x','y','z']],df.loc[j][['x','y','z']],d)
+        # arr = np.array([v[0], v[1], v[2]])
+        arr = np.array([v])
         col_name = 'vector'+str(no_of_close_pts)
         df_arr = pd.DataFrame({col_name: [arr]})
         df.loc[[i],[col_name]] = df_arr
@@ -44,38 +55,39 @@ def Make_matrix_general(zeolite_name):
     
     for i in df.index:
         no_of_close_pts = 0
-        filter_xyz = df['x'].between(df.loc[i].x-dist_max, df.loc[i].x+dist_max, inclusive=False) & df['y'].between(df.loc[i].y-dist_max, df.loc[i].y+dist_max, inclusive=False) & df['z'].between(df.loc[i].z-dist_max, df.loc[i].z+dist_max, inclusive=False)
-        if len(df.loc[filter_xyz]) >= 4:
+        filter_xyz = df['x'].between(df.loc[i].x-dist_max, df.loc[i].x+dist_max, inclusive='neither') & df['y'].between(df.loc[i].y-dist_max, df.loc[i].y+dist_max, inclusive='neither') & df['z'].between(df.loc[i].z-dist_max, df.loc[i].z+dist_max, inclusive='neither')
+        if len(df.loc[filter_xyz]) > 4:
             for j in df.loc[filter_xyz].node_num.to_list():
                 j=j-1   # since accessing elements in df using index for the rest of this loop, reduce 1 from j
                 if no_of_close_pts==4:    #Break loop if all 4 neighbours found
                     break
                 no_of_close_pts = assign_vectors(i,j,no_of_close_pts)
-
+                
     # pd.set_option('display.max_columns', None)
     # pd.set_option('display.max_rows', None)
     df_new = df.dropna()
     df_new.set_index('node_num')
-    # global node_array
+
     node_array = df_new.node_num.to_numpy()
     df_new.loc[:,"all_vectors"] = ""
     for i in df_new.index:
-        tuple_vec = []
-        tuple_vec.append(df_new.loc[i].vector1.tolist())
-        tuple_vec.append(df_new.loc[i].vector2.tolist())
-        tuple_vec.append(df_new.loc[i].vector3.tolist())
-        tuple_vec.append(df_new.loc[i].vector4.tolist())
+        # tuple_vec = []
+        # tuple_vec.append(df_new.loc[i].vector1.tolist())
+        # tuple_vec.append(df_new.loc[i].vector2.tolist())
+        # tuple_vec.append(df_new.loc[i].vector3.tolist())
+        # tuple_vec.append(df_new.loc[i].vector4.tolist())
+        tuple_vec = [df_new.loc[i].vector1.tolist(), df_new.loc[i].vector2.tolist(), df_new.loc[i].vector3.tolist(), df_new.loc[i].vector4.tolist()]
         tuple_vec.sort()
         df_new.loc[i,'all_vectors'] = str(tuple_vec)
     df_new = df_new.assign(id=(df_new['all_vectors']).astype('category').cat.codes)
     df_new.drop(columns='all_vectors')
 
     grouped_lists = df_new.groupby('id').agg(lambda col: col.tolist())['node_num'].reset_index().node_num.tolist()
-    MatConn = np.zeros((node_array[-1]+1,node_array[-1]+1))
+    MatConn = np.zeros((node_array[-1]+1,node_array[-1]+1), dtype=np.bool_)
 
     # Output of connectivities after null values dropped. This gives the reduced connectivitiy matrix
     for i in node_array:
-        filter_xyz = df['x'].between(df.loc[i-1].x-dist_max, df.loc[i-1].x+dist_max, inclusive=False) & df['y'].between(df.loc[i-1].y-dist_max, df.loc[i-1].y+dist_max, inclusive=False) & df['z'].between(df.loc[i-1].z-dist_max, df.loc[i-1].z+dist_max, inclusive=False)
+        filter_xyz = df['x'].between(df.loc[i-1].x-dist_max, df.loc[i-1].x+dist_max, inclusive='neither') & df['y'].between(df.loc[i-1].y-dist_max, df.loc[i-1].y+dist_max, inclusive='neither') & df['z'].between(df.loc[i-1].z-dist_max, df.loc[i-1].z+dist_max, inclusive='neither')
         for j in node_array:
             d = distance(df_new.loc[i-1],df_new.loc[j-1])
             if (d < dist_max and d > dist_min):
